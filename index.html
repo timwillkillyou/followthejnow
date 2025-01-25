@@ -1,0 +1,59 @@
+<!DOCTYPE html>  
+<html>  
+<head>  
+    <title>AI Horror Game</title>  
+    <style>  
+        body { background: black; color: red; font-family: 'Courier New'; }  
+        #scene { margin: 20px; }  
+        button { background: #400000; color: white; padding: 10px; margin: 5px; }  
+    </style>  
+</head>  
+<body>  
+    <div id="scene"></div>  
+    <div id="choices"></div>  
+
+    <script>  
+        async function generate(prompt = "") {  
+            const response = await fetch("/api/generate", {  
+                method: "POST",  
+                headers: { "Content-Type": "application/json" },  
+                body: JSON.stringify({ prompt })  
+            });  
+            return await response.json();  
+        }  
+
+        async function loadGame() {  
+            // Start-Szene  
+            const data = await generate(`  
+            Eröffnungsszene für ein Horror-Spiel:  
+            - Protagonistin J (19, schizophren)  
+            - Ort: Psychiatrische Klinik nachts  
+            - 2 gruselige Entscheidungen  
+            `);  
+
+            document.getElementById("scene").innerHTML = `  
+                <p>${data.text}</p>  
+                <img src="${data.image}" style="max-width: 600px;">  
+            `;  
+
+            // Buttons generieren  
+            let buttons = "";  
+            data.choices.forEach((choice, i) => {  
+                buttons += `<button onclick="choose(${i})">${choice}</button>`;  
+            });  
+            document.getElementById("choices").innerHTML = buttons;  
+        }  
+
+        async function choose(choiceIndex) {  
+            const data = await generate(`  
+            Nächste Szene nach Entscheidung ${choiceIndex + 1}:  
+            - Extrem detaillierter Horror  
+            - 2 neue Entscheidungen  
+            `);  
+            // ... wie oben ...  
+        }  
+
+        loadGame();  
+    </script>  
+</body>  
+</html>  
