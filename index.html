@@ -3,9 +3,9 @@
 <head>  
     <title>AI Horror Game</title>  
     <style>  
-        body { background: black; color: red; font-family: 'Courier New'; }  
+        body { background: #000; color: #ff4444; font-family: 'Courier New'; }  
         #scene { margin: 20px; }  
-        button { background: #400000; color: white; padding: 10px; margin: 5px; }  
+        button { background: #300000; padding: 10px; margin: 5px; }  
     </style>  
 </head>  
 <body>  
@@ -13,47 +13,43 @@
     <div id="choices"></div>  
 
     <script>  
-        async function generate(prompt = "") {  
-            const response = await fetch("/api/generate", {  
-                method: "POST",  
-                headers: { "Content-Type": "application/json" },  
-                body: JSON.stringify({ prompt })  
-            });  
-            return await response.json();  
+        const API_URL = "https://DEIN_VERCEL_PROJEKT.vercel.app/api/generate";  
+
+        async function generate(prompt) {  
+            try {  
+                const response = await fetch(API_URL, {  
+                    method: "POST",  
+                    headers: { "Content-Type": "application/json" },  
+                    body: JSON.stringify({ prompt })  
+                });  
+                return await response.json();  
+            } catch (error) {  
+                console.error("API-Fehler:", error);  
+                return { text: "ERROR", image: "", choices: [] };  
+            }  
         }  
 
-        async function loadGame() {  
-            // Start-Szene  
+        async function loadScene() {  
             const data = await generate(`  
-            Eröffnungsszene für ein Horror-Spiel:  
+            Erstelle eine Horror-Szene mit diesen Elementen:  
             - Protagonistin J (19, schizophren)  
-            - Ort: Psychiatrische Klinik nachts  
-            - 2 gruselige Entscheidungen  
+            - Ort: Psychiatrische Klinik  
+            - 2 Entscheidungen mit extremen Konsequenzen  
             `);  
 
             document.getElementById("scene").innerHTML = `  
-                <p>${data.text}</p>  
-                <img src="${data.image}" style="max-width: 600px;">  
+                <p>${data.text.replace(/\n/g, "<br>")}</p>  
+                <img src="${data.image}" style="max-width: 600px; border: 2px solid red;">  
             `;  
 
-            // Buttons generieren  
             let buttons = "";  
-            data.choices.forEach((choice, i) => {  
-                buttons += `<button onclick="choose(${i})">${choice}</button>`;  
+            data.choices.forEach((choice, index) => {  
+                buttons += `<button onclick="choose(${index})">${choice}</button>`;  
             });  
             document.getElementById("choices").innerHTML = buttons;  
         }  
 
-        async function choose(choiceIndex) {  
-            const data = await generate(`  
-            Nächste Szene nach Entscheidung ${choiceIndex + 1}:  
-            - Extrem detaillierter Horror  
-            - 2 neue Entscheidungen  
-            `);  
-            // ... wie oben ...  
-        }  
-
-        loadGame();  
+        loadScene();  
     </script>  
 </body>  
 </html>  
