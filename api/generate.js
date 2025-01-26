@@ -1,59 +1,55 @@
-import Replicate from "replicate";  
+import Replicate from "replicate";
 
-export default async function handler(req, res) {  
-  const replicate = new Replicate({  
-    auth: process.env.REPLICATE_API_KEY  
-  });  
+export default async function handler(req, res) {
+  const replicate = new Replicate({
+    auth: process.env.REPLICATE_API_KEY,
+  });
 
-  try {  
-    // Text generieren  
-    const textResponse = await replicate.run(  
-      "meta/llama-3-70b-instruct",  
-      {  
-        input: {  
-          prompt: `  
-          DU BIST HORROR-AUTOR.  
-          AKTUELLE ANWEISUNG: ${req.body.prompt}  
-          FORMATIERE SO:  
-          ## SCENE  
-          [Max. 3 Sätze]  
-          ## CHOICES  
-          1) [Entscheidung A]  
-          2) [Entscheidung B]  
-          `,  
-          max_tokens: 500  
-        }  
-      }  
-    );  
+  // Schritt 1: Text generieren
+  let sceneText;
+  try {
+    const textResponse = await replicate.run(
+      "meta/llama-3-70b-instruct",
+      {
+        input: {
+          prompt: `GENERATE HORROR SCENE ABOUT SCHIZOPHRENIC PATIENT J IN ASYLUM. OUTPUT FORMAT:
+          
+          ## SCENE
+          [2-3 Sätze Horror-Atmosphäre]
+          
+          ## CHOICES
+          1) [Entscheidung A]
+          2) [Entscheidung B]`,
+          max_tokens: 500,
+        },
+      }
+    );
+    sceneText = textResponse.join("");
+  } catch (error) {
+    return res.status(500).json({ error: "Text generation failed" });
+  }
 
-    const sceneText = textResponse.join("");  
-    const choices = sceneText  
-      .split("## CHOICES")[1]  
-      .split("\n")  
-      .filter(line => line.trim().startsWith("1)") || line.trim().startsWith("2)"))  
-      .map(line => line.replace(/^\d+\)\s*/, ""));  
+  // Schritt 2: Bild generieren
+  let imageUrl;
+  try {
+    const imageResponse = await replicate.run(
+      "stability-ai/sdxl:39ed52f2a78e934b3ba6e2a89f5b1c712de7dfea535525255b1aa35c5565e08b",
+      {
+        input: {
+          prompt: `Horror game scene: ${sceneText}`,
+          negative_prompt: "cartoon, happy, colorful",
+        },
+      }
+    );
+    imageUrl = imageResponse[0];
+  } catch (error) {
+    imageUrl = "https://via.placeholder.com/600x300.png?text=Image+Failed";
+  }
 
-    // Bild generieren  
-    const imageResponse = await replicate.run(  
-      "stability-ai/sdxl:39ed52f2a78e934b3ba6e2a89f5b1c712de7dfea535525255b1aa35c5565e08b",  
-      {  
-        input: {  
-          prompt: `Horror-Spiel Szene: ${sceneText}`,  
-          negative_prompt: "cartoon, cute, happy",  
-          width: 1024,  
-          height: 512  
-        }  
-      }  
-    );  
-
-    res.status(200).json({  
-      text: sceneText,  
-      image: imageResponse[0],  
-      choices: choices  
-    });  
-
-  } catch (error) {  
-    console.error("Fehler:", error);  
-    res.status(500).json({ error: "API-Aufruf fehlgeschlagen" });  
-  }  
-}  
+  // Antwort senden
+  res.status(200).json({
+    text: sceneText,
+    image: imageUrl,
+    choices: ["Enter the dark room", "Run away"], // Vereinfacht für Test
+  });
+}
